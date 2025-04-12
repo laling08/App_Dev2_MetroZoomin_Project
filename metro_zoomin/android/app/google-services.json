@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "404026903399",
+    "project_id": "metro-zoomin",
+    "storage_bucket": "metro-zoomin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:404026903399:android:2231d4538b5b89211a7dc2",
+        "android_client_info": {
+          "package_name": "com.example.metro_zoomin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZj8d_zxoynqhGQkAnI82ylTKCg4evwOc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
