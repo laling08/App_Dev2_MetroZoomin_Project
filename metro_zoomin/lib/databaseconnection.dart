@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'Models/User.dart';
+import 'Models/Station.dart';
 
 class DatabaseHelper {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static CollectionReference users = FirebaseFirestore.instance.collection('users');
+  static CollectionReference stations = FirebaseFirestore.instance.collection('stations');
 
-  CollectionReference users = FirebaseFirestore.instance.collection('users');
-  CollectionReference stations = FirebaseFirestore.instance.collection('stations');
-
-  Future<void> addUser(String username, String password, DateTime dob, String email, int phone, String gender, String pin) async {
+  static Future<void> addUser(String username, String password, DateTime dob, String email, String phone, String gender, int pin) async {
     if (username.isNotEmpty && password.isNotEmpty && email.isNotEmpty) {
       try {
         await users.add({
@@ -16,7 +16,7 @@ class DatabaseHelper {
           'email': email,
           'phone': phone,
           'gender': gender,
-          'ping': pin,
+          'pin': pin,
         });
         print('User $username added successfully.');
       } catch (error) {
@@ -25,7 +25,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> updateUser(String id, String newUsername, String newPassword, String newEmail, int newPhone, String newGender, String newPin) async {
+  static Future<void> updateUser(String id, String newUsername, String newPassword, String newEmail, String newPhone, String newGender, int newPin) async {
     if (newUsername.isNotEmpty && newPassword.isNotEmpty && newEmail.isNotEmpty) {
       try {
         await users.doc(id).update({
@@ -34,12 +34,48 @@ class DatabaseHelper {
           'email': newEmail,
           'phone': newPhone,
           'gender': newGender,
-          'ping': newPin,
+          'pin': newPin,
         });
         print('User $newUsername updated successfully');
       } catch (error) {
         print('Failed to update the user $newUsername in the Firestore: $error');
       }
+    }
+  }
+
+  static Future<User?> getUser(String id) async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    try {
+      DocumentSnapshot snapshot = await firestore.collection('Users').doc(id).get();
+
+      if (snapshot.exists) {
+        Map<String, dynamic> userData = snapshot.data() as Map<String, dynamic>;
+        print('User found: $userData');
+        return User.fromMap(userData);
+      } else {
+        print('User does not exist');
+      }
+    } catch (e) {
+      print('Error retrieving user: $e');
+    }
+  }
+
+  static Future<Station?> getStation(String id) async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    try {
+      DocumentSnapshot snapshot = await firestore.collection('Station').doc(id).get();
+
+      if (snapshot.exists) {
+        Map<String, dynamic> stationData = snapshot.data() as Map<String, dynamic>;
+        print('Station found: $stationData');
+        return Station.fromMap(stationData);
+      } else {
+        print('Station does not exist');
+      }
+    } catch (e) {
+      print('Error retrieving station: $e');
     }
   }
 }
