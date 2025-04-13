@@ -30,6 +30,7 @@ class MetroZoomin extends StatelessWidget {
       theme: ThemeData(
           primarySwatch: Colors.grey // subject to change
       ),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

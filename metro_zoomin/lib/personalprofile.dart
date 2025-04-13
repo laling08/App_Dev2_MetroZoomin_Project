@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'universalwidgets.dart';
 
 class PersonalProfile extends StatefulWidget {
   const PersonalProfile({super.key});
@@ -10,6 +11,15 @@ class PersonalProfile extends StatefulWidget {
 class _PersonalProfileState extends State<PersonalProfile> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: CustomAppBar(title: 'Personal Profile'),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Text('Test'),
+          ],
+        ),
+      ),
+    );
   }
 }
