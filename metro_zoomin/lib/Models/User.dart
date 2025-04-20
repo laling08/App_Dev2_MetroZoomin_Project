@@ -1,4 +1,4 @@
-import 'package:metro_zoomin/databaseconnection.dart';
+import 'package:metro_zoomin/services/databaseconnection.dart';
 
 class User {
   String username;

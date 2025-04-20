@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'universalwidgets.dart';
+import '../widgets/universalwidgets.dart';
 
 class PersonalProfile extends StatefulWidget {
   const PersonalProfile({super.key});
