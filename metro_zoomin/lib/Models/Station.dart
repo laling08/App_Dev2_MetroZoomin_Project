@@ -1,4 +1,4 @@
-import 'package:metro_zoomin/databaseconnection.dart';
+import 'package:metro_zoomin/services/databaseconnection.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Station {

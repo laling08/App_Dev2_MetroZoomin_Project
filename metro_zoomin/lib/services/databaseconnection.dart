@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'Models/User.dart';
-import 'Models/Station.dart';
+import '../Models/User.dart';
+import '../Models/Station.dart';
 
 class DatabaseHelper {
   static CollectionReference users = FirebaseFirestore.instance.collection('users');
