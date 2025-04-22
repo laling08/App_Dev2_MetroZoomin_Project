@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'Models/User.dart';
-import 'Models/Station.dart';
+import '../Models/User.dart';
+import '../Models/Station.dart';
 
 class DatabaseHelper {
   static CollectionReference users = FirebaseFirestore.instance.collection('users');
@@ -43,7 +43,7 @@ class DatabaseHelper {
     }
   }
 
-  static Future<User?> getUser(String id) async {
+  static Future<UserModel?> getUser(String id) async {
     FirebaseFirestore firestore = FirebaseFirestore.instance;
 
     try {
@@ -52,13 +52,14 @@ class DatabaseHelper {
       if (snapshot.exists) {
         Map<String, dynamic> userData = snapshot.data() as Map<String, dynamic>;
         print('User found: $userData');
-        return User.fromMap(userData);
+        return UserModel.fromMap(userData, id: id);
       } else {
         print('User does not exist');
       }
     } catch (e) {
       print('Error retrieving user: $e');
     }
+    return null;
   }
 
   static Future<Station?> getStation(String id) async {
@@ -70,12 +71,13 @@ class DatabaseHelper {
       if (snapshot.exists) {
         Map<String, dynamic> stationData = snapshot.data() as Map<String, dynamic>;
         print('Station found: $stationData');
-        return Station.fromMap(stationData);
+        return Station.fromMap(stationData, docId: id);
       } else {
         print('Station does not exist');
       }
     } catch (e) {
       print('Error retrieving station: $e');
     }
+    return null;
   }
 }
