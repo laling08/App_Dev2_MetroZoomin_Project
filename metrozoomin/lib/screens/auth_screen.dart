@@ -191,12 +191,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     SizedBox(height: 16),
                     SocialButton(
-                      icon: Icons.flutter_dash,
-                      text: 'Continue with Twitter',
-                      onPressed: () => _signInWithSocial(SocialProvider.twitter),
-                    ),
-                    SizedBox(height: 16),
-                    SocialButton(
                       icon: Icons.mail_outline,
                       text: 'Continue with Gmail',
                       onPressed: () => _signInWithSocial(SocialProvider.google),
@@ -514,11 +508,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 IconButton(
                   icon: Icon(Icons.facebook, size: 30),
                   onPressed: () => _signInWithSocial(SocialProvider.facebook),
-                ),
-                SizedBox(width: 24),
-                IconButton(
-                  icon: Icon(Icons.flutter_dash, size: 30),
-                  onPressed: () => _signInWithSocial(SocialProvider.twitter),
                 ),
                 SizedBox(width: 24),
                 IconButton(
