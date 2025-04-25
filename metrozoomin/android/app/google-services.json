@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "225122880864",
+    "project_id": "metrozoomin-bd5b3",
+    "storage_bucket": "metrozoomin-bd5b3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225122880864:android:e752fe373fc6803255e205",
+        "android_client_info": {
+          "package_name": "com.example.metrozoomin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQY1AeEplQCsgDYl_On9YCmCb4utjD0Lw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
