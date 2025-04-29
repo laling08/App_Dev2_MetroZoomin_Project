@@ -911,7 +911,7 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                             .doc(FirebaseAuth.instance.currentUser?.uid)
                             .get(),
                         builder: (context, snapshot) {
-                          String username = 'User';
+                          String username = 'Unknown User';
                           if (snapshot.hasData && snapshot.data != null) {
                             final userData = snapshot.data!.data() as Map<String, dynamic>?;
                             username = userData?['username'] ?? 'User';
@@ -946,6 +946,17 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                 ],
               ),
               const SizedBox(height: 16),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'What station are you visiting?',
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blueAccent, width: 1),
+                  ),
+                ),
+              ),
               const TextField(
                 decoration: InputDecoration(
                   hintText: 'Share your metro experience...',
