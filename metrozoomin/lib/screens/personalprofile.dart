@@ -349,7 +349,10 @@ class _PersonalProfileState extends State<PersonalProfile> {
                       icon: Icons.lock_outline,
                       title: 'Change Password',
                       onTap: () {
-                        // Show change password dialog
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => NewPasswordScreen()),
+                        );
                       },
                     ),
                     const Divider(),
@@ -359,7 +362,10 @@ class _PersonalProfileState extends State<PersonalProfile> {
                       icon: Icons.notifications_none,
                       title: 'Notifications',
                       onTap: () {
-                        // Navigate to notifications settings
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UnimplementedScreen()),
+                        );
                       },
                     ),
                     const Divider(),
@@ -369,7 +375,10 @@ class _PersonalProfileState extends State<PersonalProfile> {
                       icon: Icons.privacy_tip_outlined,
                       title: 'Privacy',
                       onTap: () {
-                        // Navigate to privacy settings
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UnimplementedScreen()),
+                        );
                       },
                     ),
                     const Divider(),
@@ -379,7 +388,10 @@ class _PersonalProfileState extends State<PersonalProfile> {
                       icon: Icons.help_outline,
                       title: 'Help & Support',
                       onTap: () {
-                        // Navigate to help & support
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => UnimplementedScreen()),
+                        );
                       },
                     ),
                     const Divider(),
@@ -433,6 +445,95 @@ class _PersonalProfileState extends State<PersonalProfile> {
               size: 16,
               color: Colors.grey.shade400,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NewPasswordScreen extends StatefulWidget {
+  const NewPasswordScreen({super.key});
+
+  @override
+  State<NewPasswordScreen> createState() => _NewPasswordScreenState();
+}
+
+class _NewPasswordScreenState extends State<NewPasswordScreen> {
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop(); // Custom behavior for the back button
+          },
+        ),
+        title: Text('Change Password'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await FirebaseAuth.instance.currentUser?.updatePassword(
+                    _passwordController.text,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Password updated successfully!')),
+                  );
+                  Navigator.of(context).pop(); // Go back to the previous screen
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}')),
+                  );
+                }
+              },
+              child: Text('Update Password'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class UnimplementedScreen extends StatelessWidget {
+  const UnimplementedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop(); // Custom behavior for the back button
+          },
+        ),
+        title: Text('Unimplemented Page'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(26.0),
+        child: Column(
+          children: [
+            Icon(Icons.warning_amber_rounded, size: 70),
+            SizedBox(height: 30),
+            Text('You\'ve unfortunately reached an unimplemented page! '
+                'We look forward to implementing this page in the future, '
+                'but, until then, please return to the previous page!')
           ],
         ),
       ),

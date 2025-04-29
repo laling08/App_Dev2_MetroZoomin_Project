@@ -44,6 +44,8 @@ dependencies:
   google_sign_in: any
   flutter_facebook_auth: any
 
+  intl: any
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

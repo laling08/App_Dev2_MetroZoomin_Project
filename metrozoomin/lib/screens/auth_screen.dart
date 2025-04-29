@@ -19,7 +19,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _signUpEmailController = TextEditingController();
   final TextEditingController _signUpPasswordController = TextEditingController();
-  final TextEditingController _signUpUsernameController = TextEditingController();
+  //final TextEditingController _signUpUsernameController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isSignUpPasswordVisible = false;
@@ -33,7 +33,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _passwordController.dispose();
     _signUpEmailController.dispose();
     _signUpPasswordController.dispose();
-    _signUpUsernameController.dispose();
+    //_signUpUsernameController.dispose();
     super.dispose();
   }
 
@@ -62,7 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
-        _showSnackBar('Invalid email or password');
+        _showSnackBar('Invalid email or password. Your password must be at least 6 characters long.');
       }
     } catch (e) {
       _showSnackBar('Error: ${e.toString()}');
@@ -73,8 +73,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _signUpWithEmail() async {
     if (_signUpEmailController.text.isEmpty ||
-        _signUpPasswordController.text.isEmpty ||
-        _signUpUsernameController.text.isEmpty) {
+        _signUpPasswordController.text.isEmpty) {
       _showSnackBar('Please fill in all fields');
       return;
     }
@@ -410,13 +409,6 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ),
                       SizedBox(height: 40),
-
-                      // Username field
-                      CustomTextField(
-                        controller: _signUpUsernameController,
-                        hintText: 'Username',
-                      ),
-                      SizedBox(height: 16),
 
                       // Email field
                       CustomTextField(

@@ -5,6 +5,7 @@ import 'package:metrozoomin/screens/personalprofile.dart';
 import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/Models/Station.dart';
 import 'package:metrozoomin/services/station_service.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -596,40 +597,41 @@ class PersonalPostsScreen extends StatefulWidget {
 }
 
 class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
-  final List<Map<String, dynamic>> _posts = [
-    {
-      'username': 'John Doe',
-      'station': 'Central Station',
-      'content': 'Just arrived at Central Station. The new renovations look amazing!',
-      'imageUrl': '',
-      'likes': 24,
-      'comments': 5,
-      'time': '2 hours ago',
-    },
-    {
-      'username': 'Jane Smith',
-      'station': 'Westside Terminal',
-      'content': 'Waiting for the express train. It\'s running 10 minutes late today.',
-      'imageUrl': '',
-      'likes': 18,
-      'comments': 12,
-      'time': '4 hours ago',
-    },
-    {
-      'username': 'Mike Johnson',
-      'station': 'Downtown Metro',
-      'content': 'Found this amazing coffee shop right next to Downtown Metro station!',
-      'imageUrl': '',
-      'likes': 56,
-      'comments': 8,
-      'time': 'Yesterday',
-    },
-  ];
+  List<Map<String, dynamic>> _posts = [];
+  bool _isLoading = true;
+
+  Future<List<Map<String, dynamic>>> getPosts() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('posts').get();
+    List<Map<String, dynamic>> posts = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    return posts;
+  }
+
+  Future<void> _fetchPosts() async {
+    try {
+      List<Map<String, dynamic>> posts = await getPosts();
+      setState(() {
+        _posts = posts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error fetching posts: $e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: _isLoading ? Center(child: CircularProgressIndicator())
+      : Column(
         children: [
           // Create post section
           _buildCreatePostSection(),
@@ -768,7 +770,7 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            post['time'],
+                            DateFormat('yyyy-MM-dd HH:mm:ss').format(post['time'].toDate()).toString(),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade600,
@@ -827,16 +829,19 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                     IconButton(
                       icon: const Icon(Icons.comment_outlined),
                       onPressed: () {
-                        // Show comments
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Your comments have been disabled by Metro Zoomin.')),
+                        );
                       },
                     ),
-                    Text('${post['comments']}'),
                   ],
                 ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
                   onPressed: () {
-                    // Share post
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Sharing posts has been disabled by Metro Zoomin.')),
+                    );
                   },
                 ),
               ],

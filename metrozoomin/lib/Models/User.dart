@@ -53,32 +53,4 @@ class UserModel {
   Future<void> saveToFirestore() async {
     await FirebaseFirestore.instance.collection('users').doc(id).set(toMap());
   }
-
-  Future<void> updateProfile({
-    String? newUsername,
-    String? newPhone,
-    String? newGender,
-    String? newPhotoUrl,
-    int? newPin,
-  }) async {
-    if (newUsername != null) username = newUsername;
-    if (newPhone != null) phone = newPhone;
-    if (newGender != null) gender = newGender;
-    if (newPhotoUrl != null) photoUrl = newPhotoUrl;
-    if (newPin != null) pin = newPin;
-
-    await saveToFirestore();
-  }
-
-  Future<void> toggleFavoriteStation(String stationId) async {
-    if (favoriteStations.contains(stationId)) {
-      favoriteStations.remove(stationId);
-    } else {
-      favoriteStations.add(stationId);
-    }
-
-    await FirebaseFirestore.instance.collection('users').doc(id).update({
-      'favoriteStations': favoriteStations,
-    });
-  }
 }
