@@ -7,6 +7,8 @@ import 'package:metrozoomin/Models/Station.dart';
 import 'package:metrozoomin/services/station_service.dart';
 import 'package:intl/intl.dart';
 
+import '../Models/Post.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -597,6 +599,8 @@ class PersonalPostsScreen extends StatefulWidget {
 }
 
 class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
+  TextEditingController stationController = new TextEditingController();
+  TextEditingController contentController = new TextEditingController();
   List<Map<String, dynamic>> _posts = [];
   bool _isLoading = true;
 
@@ -949,57 +953,54 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
               TextField(
                 decoration: InputDecoration(
                   hintText: 'What station are you visiting?',
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blueAccent, width: 1),
-                  ),
+                  border: InputBorder.none,
                 ),
+                controller: stationController,
               ),
-              const TextField(
+              TextField(
                 decoration: InputDecoration(
                   hintText: 'Share your metro experience...',
                   border: InputBorder.none,
                 ),
                 maxLines: 5,
+                controller: contentController,
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.photo),
-                      label: const Text('Photo'),
-                      onPressed: () {
-                        // Add photo
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.location_on),
-                      label: const Text('Check In'),
-                      onPressed: () {
-                        // Check in
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              // Row(
+              //   children: [
+              //     Expanded(
+              //       child: OutlinedButton.icon(
+              //         icon: const Icon(Icons.photo),
+              //         label: const Text('Photo'),
+              //         onPressed: () {
+              //           // Add photo
+              //         },
+              //         style: OutlinedButton.styleFrom(
+              //           foregroundColor: Colors.green,
+              //         ),
+              //       ),
+              //     ),
+              //     const SizedBox(width: 8),
+              //     Expanded(
+              //       child: OutlinedButton.icon(
+              //         icon: const Icon(Icons.location_on),
+              //         label: const Text('Check In'),
+              //         onPressed: () {
+              //           // Check in
+              //         },
+              //         style: OutlinedButton.styleFrom(
+              //           foregroundColor: Colors.orange,
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Post
+                    _postComment();
                     Navigator.pop(context);
                   },
                   child: const Text('Post'),
@@ -1011,6 +1012,30 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
         );
       },
     );
+  }
+
+  Future<void> _postComment() async {
+    var userData = await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).get();
+    var data = userData.data() as Map<String, dynamic>;
+
+    Post post = Post(
+        username: data['username'],
+        station: stationController.text,
+        content: contentController.text,
+        imageUrl: "",
+        likes: 0,
+        time: Timestamp.fromDate(DateTime.now())
+    );
+
+    try {
+      await FirebaseFirestore.instance.collection('posts').add(post.toMap());
+      print('Post added successfully!');
+      stationController.clear();
+      contentController.clear();
+      await _fetchPosts();
+    } catch (e) {
+      print('Failed to add post: $e');
+    }
   }
 }
 
