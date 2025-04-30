@@ -603,6 +603,7 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
   TextEditingController contentController = new TextEditingController();
   List<Map<String, dynamic>> _posts = [];
   bool _isLoading = true;
+  bool _isLiking = false;
 
   Future<List<Map<String, dynamic>>> getPosts() async {
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('posts').get();
@@ -822,7 +823,7 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                     IconButton(
                       icon: const Icon(Icons.thumb_up_outlined),
                       onPressed: () {
-                        // Like post
+                        _isLiking ? null : _likePost(post);
                       },
                     ),
                     Text('${post['likes']}'),
@@ -854,6 +855,84 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _likePost(post) async {
+    if (_isLiking) return;
+
+    setState(() {
+      _isLiking = true;
+    });
+
+    try {
+      // Get the current user ID
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You need to be logged in to like posts')),
+        );
+        return;
+      }
+
+      final userId = currentUser.uid;
+      final postRef = FirebaseFirestore.instance.collection('posts').doc();
+
+      // Get the latest post data
+      final postSnapshot = await postRef.get();
+      if (!postSnapshot.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post no longer exists')),
+        );
+        return;
+      }
+
+      final postData = postSnapshot.data()!;
+
+      // Check if user already liked the post
+      List<String> likedBy = List<String>.from(postData['likedBy'] ?? []);
+
+      if (likedBy.contains(userId)) {
+        // User already liked the post, so unlike it
+        likedBy.remove(userId);
+        await postRef.update({
+          'likes': FieldValue.increment(-1),
+          'likedBy': likedBy,
+        });
+
+        setState(() {
+          post['likes'] = (post['likes'] ?? 0) - 1;
+          post['likedBy'] = likedBy;
+        });
+      } else {
+        // User hasn't liked the post, so like it
+        likedBy.add(userId);
+        await postRef.update({
+          'likes': FieldValue.increment(1),
+          'likedBy': likedBy,
+        });
+
+        setState(() {
+          post['likes'] = (post['likes'] ?? 0) + 1;
+          post['likedBy'] = likedBy;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating like: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLiking = false;
+      });
+    }
+  }
+
+  bool _userLikedPost(post) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return false;
+
+    List<String> likedBy = List<String>.from(post['likedBy'] ?? []);
+    return likedBy.contains(currentUser.uid);
   }
 
   void _showCreatePostDialog() {

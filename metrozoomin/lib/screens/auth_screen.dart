@@ -62,7 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
-        _showSnackBar('Invalid email or password. Your password must be at least 6 characters long.');
+        _showSnackBar('Invalid email or password.');
       }
     } catch (e) {
       _showSnackBar('Error: ${e.toString()}');
