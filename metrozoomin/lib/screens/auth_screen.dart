@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:metrozoomin/screens/mainscreens.dart';
 import 'package:metrozoomin/services/auth_service.dart';
@@ -300,8 +301,17 @@ class _AuthScreenState extends State<AuthScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          // Implement forgot password
+                        onPressed: () async {
+                          if (_emailController.text.isEmpty) {
+                            _showSnackBar('Please input your email!');
+                          } else {
+                            try {
+                              await FirebaseAuth.instance.sendPasswordResetEmail(email: _emailController.text);
+                              _showSnackBar('Password reset email sent!');
+                            } catch (e) {
+                              print('Error sending password reset email : $e');
+                            }
+                          }
                         },
                         child: Text(
                           'Forgot your Password?',
