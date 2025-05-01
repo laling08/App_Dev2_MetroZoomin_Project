@@ -6,6 +6,7 @@ import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/Models/Station.dart';
 import 'package:metrozoomin/services/station_service.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../Models/Post.dart';
 
@@ -603,10 +604,9 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
   TextEditingController contentController = new TextEditingController();
   List<Map<String, dynamic>> _posts = [];
   bool _isLoading = true;
-  bool _isLiking = false;
 
   Future<List<Map<String, dynamic>>> getPosts() async {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('posts').get();
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('posts').orderBy('time', descending: true).get();
     List<Map<String, dynamic>> posts = querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
     return posts;
   }
@@ -638,10 +638,7 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
       body: _isLoading ? Center(child: CircularProgressIndicator())
       : Column(
         children: [
-          // Create post section
           _buildCreatePostSection(),
-
-          // Posts list
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -656,7 +653,6 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Show create post dialog
           _showCreatePostDialog();
         },
         backgroundColor: Colors.blue,
@@ -795,12 +791,8 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-
-            // Post content
             Text(post['content']),
             const SizedBox(height: 16),
-
-            // Post image (if any)
             if (post['imageUrl'].isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -811,19 +803,20 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-
             const SizedBox(height: 16),
-
-            // Post actions
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.thumb_up_outlined),
+                      icon: Icon(_hasUserLikedPost(post)
+                          ? Icons.thumb_up
+                          : Icons.thumb_up_outlined,
+                        color: _hasUserLikedPost(post) ? Colors.blue : null,
+                      ),
                       onPressed: () {
-                        _isLiking ? null : _likePost(post);
+                        _likePost(post);
                       },
                     ),
                     Text('${post['likes']}'),
@@ -857,27 +850,13 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
     );
   }
 
-  Future<void> _likePost(post) async {
-    if (_isLiking) return;
-
-    setState(() {
-      _isLiking = true;
-    });
-
+  Future<void> _likePost(Map<String, dynamic> post) async {
     try {
-      // Get the current user ID
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You need to be logged in to like posts')),
-        );
-        return;
-      }
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final postId = post['id'];
 
-      final userId = currentUser.uid;
-      final postRef = FirebaseFirestore.instance.collection('posts').doc();
+      final postRef = FirebaseFirestore.instance.collection('posts').doc(postId);
 
-      // Get the latest post data
       final postSnapshot = await postRef.get();
       if (!postSnapshot.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -888,46 +867,38 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
 
       final postData = postSnapshot.data()!;
 
-      // Check if user already liked the post
       List<String> likedBy = List<String>.from(postData['likedBy'] ?? []);
+      int currentLikes = postData['likes'] ?? 0;
 
       if (likedBy.contains(userId)) {
-        // User already liked the post, so unlike it
-        likedBy.remove(userId);
+        post['likes'] = currentLikes - 1;
+        post['likedBy'].remove(userId);
+
         await postRef.update({
           'likes': FieldValue.increment(-1),
-          'likedBy': likedBy,
-        });
-
-        setState(() {
-          post['likes'] = (post['likes'] ?? 0) - 1;
-          post['likedBy'] = likedBy;
+          'likedBy': FieldValue.arrayRemove([userId]),
         });
       } else {
-        // User hasn't liked the post, so like it
-        likedBy.add(userId);
+        post['likes'] = currentLikes + 1;
+        post['likedBy'] = [...likedBy, userId];
+
         await postRef.update({
           'likes': FieldValue.increment(1),
-          'likedBy': likedBy,
-        });
-
-        setState(() {
-          post['likes'] = (post['likes'] ?? 0) + 1;
-          post['likedBy'] = likedBy;
+          'likedBy': FieldValue.arrayUnion([userId]),
         });
       }
+
+      setState(() {
+        // rebuild widget
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating like: ${e.toString()}')),
       );
-    } finally {
-      setState(() {
-        _isLiking = false;
-      });
     }
   }
 
-  bool _userLikedPost(post) {
+  bool _hasUserLikedPost(Map<String, dynamic> post) {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return false;
 
@@ -1096,18 +1067,22 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
   Future<void> _postComment() async {
     var userData = await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).get();
     var data = userData.data() as Map<String, dynamic>;
+    final uuid = Uuid();
+    final customId = uuid.v4();
 
     Post post = Post(
+        id: customId,
         username: data['username'],
         station: stationController.text,
         content: contentController.text,
         imageUrl: "",
         likes: 0,
-        time: Timestamp.fromDate(DateTime.now())
+        time: Timestamp.fromDate(DateTime.now()),
+        likedBy: [],
     );
 
     try {
-      await FirebaseFirestore.instance.collection('posts').add(post.toMap());
+      await FirebaseFirestore.instance.collection('posts').doc(customId).set(post.toMap());
       print('Post added successfully!');
       stationController.clear();
       contentController.clear();
