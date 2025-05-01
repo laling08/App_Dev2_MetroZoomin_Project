@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:metrozoomin/screens/auth_screen.dart';
 
+import 'mainscreens.dart';
+
 class OnboardingScreen extends StatefulWidget {
   @override
   _OnboardingScreenState createState() => _OnboardingScreenState();
@@ -14,6 +16,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Splash screen delay for three seconds
+    Future.delayed(Duration(seconds: 3), () {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => AuthScreen()));
+    });
   }
 
   @override
@@ -34,12 +45,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               imagePath: 'assets/images/metro_logo.png',
               backgroundColor: Colors.white,
               showStars: true,
-            ),
-            // Second splash screen (Welcome)
-            WelcomePage(
-              title: 'Explore the City',
-              subtitle: 'Welcome to MetroZoomin',
-              imagePath: 'assets/images/metro_background.jpg',
             ),
           ],
         ),
@@ -214,7 +219,7 @@ class SplashPage extends StatelessWidget {
                 Container(
                   width: 30,
                   height: 30,
-                  margin: EdgeInsets.only(top: -5),
+                  margin: EdgeInsets.only(top: 5),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
                     borderRadius: BorderRadius.only(
@@ -229,63 +234,6 @@ class SplashPage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class WelcomePage extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String imagePath;
-
-  const WelcomePage({
-    Key? key,
-    required this.title,
-    required this.subtitle,
-    required this.imagePath,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Background image
-        Image.asset(
-          imagePath,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.black.withOpacity(0.6),
-          colorBlendMode: BlendMode.darken,
-        ),
-        // Text overlay
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 200),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

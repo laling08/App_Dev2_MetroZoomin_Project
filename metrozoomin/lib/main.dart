@@ -74,9 +74,6 @@ class AuthenticationWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Check if the user has seen onboarding
-        final bool hasSeenOnboarding = true; // Replace with actual preference check
-
         // If loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -86,12 +83,12 @@ class AuthenticationWrapper extends StatelessWidget {
           );
         }
 
-        // If not logged in
+        // Always show OnboardingScreen if not logged in
         if (!snapshot.hasData) {
-          return hasSeenOnboarding ? AuthScreen() : OnboardingScreen();
+          return OnboardingScreen();
         }
 
-        // If logged in
+        // If logged in, show the HomeScreen
         return const HomeScreen();
       },
     );
