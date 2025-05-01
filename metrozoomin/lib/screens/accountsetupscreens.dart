@@ -99,8 +99,6 @@ class _AccountSetUpScreenState extends State<AccountSetUpScreen> {
               ),
             ),
             const SizedBox(height: 30),
-
-            // Phone number
             const Text(
               'Phone Number',
               style: TextStyle(
@@ -115,8 +113,6 @@ class _AccountSetUpScreenState extends State<AccountSetUpScreen> {
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 20),
-
-            // Date of Birth
             const Text(
               'Date of Birth',
               style: TextStyle(
@@ -136,8 +132,6 @@ class _AccountSetUpScreenState extends State<AccountSetUpScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Gender
             const Text(
               'Gender',
               style: TextStyle(
@@ -173,8 +167,6 @@ class _AccountSetUpScreenState extends State<AccountSetUpScreen> {
               ),
             ),
             const SizedBox(height: 40),
-
-            // Continue button
             CustomButton(
               text: 'Continue',
               onPressed: _saveUserInfo,
@@ -231,8 +223,6 @@ class _PinScreenState extends State<PinScreen> {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
           'pin': int.parse(pin),
         });
-
-        // Navigate to congratulations screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const CongratulationsScreen()),
@@ -281,8 +271,6 @@ class _PinScreenState extends State<PinScreen> {
               ),
             ),
             const SizedBox(height: 40),
-
-            // PIN input fields
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(4, (index) {
@@ -316,8 +304,6 @@ class _PinScreenState extends State<PinScreen> {
               }),
             ),
             const SizedBox(height: 40),
-
-            // Confirm button
             CustomButton(
               text: 'Confirm PIN',
               onPressed: _savePin,
