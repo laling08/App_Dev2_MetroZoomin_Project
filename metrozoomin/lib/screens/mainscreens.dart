@@ -5,8 +5,12 @@ import 'package:metrozoomin/screens/personalprofile.dart';
 import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/Models/Station.dart';
 import 'package:metrozoomin/services/station_service.dart';
+import 'package:metrozoomin/services/notification_service.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import '../Models/Post.dart';
 
@@ -27,6 +31,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadNearbyStations();
+
+    // Setup notification listeners
+    NotificationService().setupNotificationListeners((notificationId) {
+      // Navigate to posts tab when notification is tapped
+      setState(() {
+        _selectedIndex = 2; // Posts tab index
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    NotificationService().disposeNotificationListeners();
+    super.dispose();
   }
 
   Future<void> _loadNearbyStations() async {
@@ -636,7 +654,7 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading ? Center(child: CircularProgressIndicator())
-      : Column(
+          : Column(
         children: [
           _buildCreatePostSection(),
           Expanded(
@@ -1016,35 +1034,6 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
                 controller: contentController,
               ),
               const SizedBox(height: 16),
-              // Row(
-              //   children: [
-              //     Expanded(
-              //       child: OutlinedButton.icon(
-              //         icon: const Icon(Icons.photo),
-              //         label: const Text('Photo'),
-              //         onPressed: () {
-              //           // Add photo
-              //         },
-              //         style: OutlinedButton.styleFrom(
-              //           foregroundColor: Colors.green,
-              //         ),
-              //       ),
-              //     ),
-              //     const SizedBox(width: 8),
-              //     Expanded(
-              //       child: OutlinedButton.icon(
-              //         icon: const Icon(Icons.location_on),
-              //         label: const Text('Check In'),
-              //         onPressed: () {
-              //           // Check in
-              //         },
-              //         style: OutlinedButton.styleFrom(
-              //           foregroundColor: Colors.orange,
-              //         ),
-              //       ),
-              //     ),
-              //   ],
-              // ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -1071,19 +1060,26 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
     final customId = uuid.v4();
 
     Post post = Post(
-        id: customId,
-        username: data['username'],
-        station: stationController.text,
-        content: contentController.text,
-        imageUrl: "",
-        likes: 0,
-        time: Timestamp.fromDate(DateTime.now()),
-        likedBy: [],
+      id: customId,
+      username: data['username'],
+      station: stationController.text,
+      content: contentController.text,
+      imageUrl: "",
+      likes: 0,
+      time: Timestamp.fromDate(DateTime.now()),
+      likedBy: [],
     );
 
     try {
       await FirebaseFirestore.instance.collection('posts').doc(customId).set(post.toMap());
       print('Post added successfully!');
+
+      // Show notification when a new post is created
+      await NotificationService().showNewPostNotification(
+        username: data['username'],
+        station: stationController.text,
+      );
+
       stationController.clear();
       contentController.clear();
       await _fetchPosts();
@@ -1101,44 +1097,268 @@ class CityMapScreen extends StatefulWidget {
 }
 
 class _CityMapScreenState extends State<CityMapScreen> {
+  GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  final Set<Polyline> _polylines = {};
+  final StationService _stationService = StationService();
+  bool _isLoading = true;
+  bool _isShowingDirections = false;
+
+  // Default camera position (New York City)
+  final CameraPosition _initialCameraPosition = const CameraPosition(
+    target: LatLng(40.7128, -74.0060),
+    zoom: 12.0,
+  );
+
+  // Source and destination for directions
+  LatLng? _source;
+  LatLng? _destination;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStations();
+  }
+
+  Future<void> _loadStations() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // For demo purposes, using a fixed location
+      final userLocation = const GeoPoint(40.7128, -74.0060); // New York City
+      final stations = await _stationService.getNearbyStations(userLocation, 10);
+
+      // Create markers for each station
+      for (var station in stations) {
+        final marker = Marker(
+          markerId: MarkerId(station.name),
+          position: LatLng(
+            station.location.latitude,
+            station.location.longitude,
+          ),
+          infoWindow: InfoWindow(
+            title: station.name,
+            snippet: station.type,
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            station.type.contains('Metro')
+                ? BitmapDescriptor.hueBlue
+                : BitmapDescriptor.hueRed,
+          ),
+          onTap: () {
+            _onMarkerTapped(LatLng(
+              station.location.latitude,
+              station.location.longitude,
+            ), station.name);
+          },
+        );
+
+        _markers.add(marker);
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading stations: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onMarkerTapped(LatLng position, String stationName) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                stationName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _source = position;
+                      });
+                      Navigator.pop(context);
+
+                      if (_destination != null) {
+                        _getDirections();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Now select a destination')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.location_on),
+                    label: const Text('Set as Source'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _destination = position;
+                      });
+                      Navigator.pop(context);
+
+                      if (_source != null) {
+                        _getDirections();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Now select a source')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.flag),
+                    label: const Text('Set as Destination'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _getDirections() async {
+    if (_source == null || _destination == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final String apiKey = 'AIzaSyCgyCgevMCS_RSF49NIz0dVN60O4L_1BOA'; // Using the API key from your AndroidManifest
+      final String url =
+          'https://maps.googleapis.com/maps/api/directions/json?origin=${_source!.latitude},${_source!.longitude}&destination=${_destination!.latitude},${_destination!.longitude}&key=$apiKey';
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        if (data['status'] == 'OK') {
+          final List<dynamic> steps = data['routes'][0]['legs'][0]['steps'];
+          List<LatLng> polylineCoordinates = [];
+
+          for (var step in steps) {
+            polylineCoordinates.add(LatLng(
+              step['start_location']['lat'],
+              step['start_location']['lng'],
+            ));
+            polylineCoordinates.add(LatLng(
+              step['end_location']['lat'],
+              step['end_location']['lng'],
+            ));
+          }
+
+          setState(() {
+            _polylines.clear();
+            _polylines.add(Polyline(
+              polylineId: const PolylineId('route'),
+              points: polylineCoordinates,
+              color: Colors.blue,
+              width: 5,
+            ));
+            _isShowingDirections = true;
+            _isLoading = false;
+          });
+
+          // Fit the map to show the entire route
+          if (_mapController != null) {
+            final LatLngBounds bounds = _boundsFromLatLngList(polylineCoordinates);
+            _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${data['status']}')),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch directions: ${response.statusCode}')),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error getting directions: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  LatLngBounds _boundsFromLatLngList(List<LatLng> list) {
+    double? minLat, maxLat, minLng, maxLng;
+
+    for (final latLng in list) {
+      if (minLat == null || latLng.latitude < minLat) {
+        minLat = latLng.latitude;
+      }
+      if (maxLat == null || latLng.latitude > maxLat) {
+        maxLat = latLng.latitude;
+      }
+      if (minLng == null || latLng.longitude < minLng) {
+        minLng = latLng.longitude;
+      }
+      if (maxLng == null || latLng.longitude > maxLng) {
+        maxLng = latLng.longitude;
+      }
+    }
+
+    return LatLngBounds(
+      southwest: LatLng(minLat!, minLng!),
+      northeast: LatLng(maxLat!, maxLng!),
+    );
+  }
+
+  void _clearDirections() {
+    setState(() {
+      _polylines.clear();
+      _source = null;
+      _destination = null;
+      _isShowingDirections = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Map placeholder
-          Container(
-            color: Colors.grey.shade200,
-            width: double.infinity,
-            height: double.infinity,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.map,
-                    size: 100,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'City Map View',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Map integration will be implemented here',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // Google Map
+          GoogleMap(
+            initialCameraPosition: _initialCameraPosition,
+            markers: _markers,
+            polylines: _polylines,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            mapType: MapType.normal,
+            zoomControlsEnabled: false,
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+            },
           ),
 
           // Search bar
@@ -1193,7 +1413,9 @@ class _CityMapScreenState extends State<CityMapScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.add),
                     onPressed: () {
-                      // Zoom in
+                      _mapController?.animateCamera(
+                        CameraUpdate.zoomIn(),
+                      );
                     },
                   ),
                 ),
@@ -1213,7 +1435,9 @@ class _CityMapScreenState extends State<CityMapScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.remove),
                     onPressed: () {
-                      // Zoom out
+                      _mapController?.animateCamera(
+                        CameraUpdate.zoomOut(),
+                      );
                     },
                   ),
                 ),
@@ -1233,13 +1457,41 @@ class _CityMapScreenState extends State<CityMapScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.my_location),
                     onPressed: () {
-                      // Center on user location
+                      _mapController?.animateCamera(
+                        CameraUpdate.newCameraPosition(_initialCameraPosition),
+                      );
                     },
                   ),
                 ),
+                if (_isShowingDirections) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: _clearDirections,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
+
+          // Loading indicator
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
 
           // Bottom sheet with station list
           DraggableScrollableSheet(
@@ -1371,6 +1623,12 @@ class _CityMapScreenState extends State<CityMapScreen> {
       '5.2 km',
     ];
 
+    // Generate dummy coordinates for each station
+    final stationLocation = LatLng(
+      40.7128 + (index * 0.01), // Dummy coordinates for demo
+      -74.0060 + (index * 0.01),
+    );
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -1402,13 +1660,49 @@ class _CityMapScreenState extends State<CityMapScreen> {
             color: Colors.grey.shade600,
           ),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.directions),
-          color: Colors.blue,
-          onPressed: () {
-            // Get directions
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.location_on, color: Colors.green),
+              onPressed: () {
+                setState(() {
+                  _source = stationLocation;
+                });
+
+                if (_destination != null) {
+                  _getDirections();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Now select a destination')),
+                  );
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.flag, color: Colors.red),
+              onPressed: () {
+                setState(() {
+                  _destination = stationLocation;
+                });
+
+                if (_source != null) {
+                  _getDirections();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Now select a source')),
+                  );
+                }
+              },
+            ),
+          ],
         ),
+        onTap: () {
+          // Center map on this station
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(stationLocation, 15),
+          );
+        },
       ),
     );
   }

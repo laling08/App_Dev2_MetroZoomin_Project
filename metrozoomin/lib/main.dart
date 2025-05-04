@@ -4,6 +4,7 @@ import 'package:metrozoomin/screens/onboarding_screen.dart';
 import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/screens/mainscreens.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metrozoomin/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,9 @@ void main() async {
       projectId: "metrozoomin-bd5b3",
     ),
   );
+
+  // Initialize notification service
+  await NotificationService().init();
 
   runApp(const MetroZoominApp());
 }
