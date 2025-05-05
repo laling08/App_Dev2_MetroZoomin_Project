@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:metrozoomin/screens/onboarding_screen.dart';
-import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/screens/mainscreens.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrozoomin/services/notification_service.dart';
