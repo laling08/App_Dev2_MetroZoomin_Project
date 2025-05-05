@@ -57,6 +57,9 @@ class _AuthScreenState extends State<AuthScreen> {
         _emailController.text,
         _passwordController.text,
       );
+      print(user.runtimeType);
+      print(_emailController.text);
+      print(_passwordController.text);
 
       if (user != null) {
         Navigator.of(context).pushReplacement(
