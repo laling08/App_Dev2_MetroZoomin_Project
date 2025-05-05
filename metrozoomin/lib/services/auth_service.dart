@@ -88,35 +88,35 @@ class AuthService {
           if (loginResult.status != LoginStatus.success) return null;
 
           final OAuthCredential credential = FacebookAuthProvider.credential(
-            loginResult.accessToken!.String,
+            loginResult.accessToken!.token,
           );
 
           authResult = await _auth.signInWithCredential(credential);
           break;
-        //
-        // case SocialProvider.twitter:
-        //   final twitterLogin = TwitterLogin(
-        //     apiKey: 'YOUR_TWITTER_API_KEY',
-        //     apiSecretKey: 'YOUR_TWITTER_API_SECRET_KEY',
-        //     redirectURI: 'metrozoomin://',
-        //   );
-        //
-        //   final authResult = await twitterLogin.login();
-        //   if (authResult.status != TwitterLoginStatus.loggedIn) return null;
-        //
-        //   final OAuthCredential credential = TwitterAuthProvider.credential(
-        //     accessToken: authResult.authToken!,
-        //     secret: authResult.authTokenSecret!,
-        //   );
-        //
-        //   final userCredential = await _auth.signInWithCredential(credential);
-        //
-        //   // Create user document in Firestore
-        //   if (userCredential.user != null) {
-        //     await _createUserDocument(userCredential.user!);
-        //   }
-        //
-        //   return userCredential.user;
+      //
+      // case SocialProvider.twitter:
+      //   final twitterLogin = TwitterLogin(
+      //     apiKey: 'YOUR_TWITTER_API_KEY',
+      //     apiSecretKey: 'YOUR_TWITTER_API_SECRET_KEY',
+      //     redirectURI: 'metrozoomin://',
+      //   );
+      //
+      //   final authResult = await twitterLogin.login();
+      //   if (authResult.status != TwitterLoginStatus.loggedIn) return null;
+      //
+      //   final OAuthCredential credential = TwitterAuthProvider.credential(
+      //     accessToken: authResult.authToken!,
+      //     secret: authResult.authTokenSecret!,
+      //   );
+      //
+      //   final userCredential = await _auth.signInWithCredential(credential);
+      //
+      //   // Create user document in Firestore
+      //   if (userCredential.user != null) {
+      //     await _createUserDocument(userCredential.user!);
+      //   }
+      //
+      //   return userCredential.user;
       }
 
       // Create user document in Firestore for Google and Facebook
