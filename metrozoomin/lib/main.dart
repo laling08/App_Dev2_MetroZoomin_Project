@@ -5,9 +5,15 @@ import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/screens/mainscreens.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrozoomin/services/notification_service.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // This is required for the splash screen
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep the splash screen visible until initialization is complete
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
   // Initialize Firebase
   await Firebase.initializeApp(
     options: const FirebaseOptions(
@@ -20,6 +26,9 @@ void main() async {
 
   // Initialize notification service
   await NotificationService().init();
+
+  // Remove the splash screen when initialization is done
+  FlutterNativeSplash.remove();
 
   runApp(const MetroZoominApp());
 }

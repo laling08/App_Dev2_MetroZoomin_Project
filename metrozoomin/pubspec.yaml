@@ -39,6 +39,7 @@ dependencies:
   awesome_notifications: any
   google_maps_flutter: any
   http: any
+  flutter_native_splash: any
 
 
   # Firebase
@@ -72,6 +73,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/metro_logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -103,3 +106,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_native_splash:
+  color: "#6ca4e0"
+  image: assets/metro_logo.png
+  android: true
+  ios: true
