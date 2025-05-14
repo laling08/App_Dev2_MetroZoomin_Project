@@ -6,6 +6,8 @@ import 'package:metrozoomin/screens/auth_screen.dart';
 import 'package:metrozoomin/Models/Station.dart';
 import 'package:metrozoomin/services/station_service.dart';
 import 'package:metrozoomin/services/notification_service.dart';
+import 'package:metrozoomin/screens/schedules_screen.dart';
+import 'package:metrozoomin/screens/ticket_menu_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -13,6 +15,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../Models/Post.dart';
+import '../widgets/universalwidgets.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,27 +300,39 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 16),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _buildActionItem(
               icon: Icons.directions_subway,
               label: 'Find Route',
               color: Colors.blue,
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 1; // Navigate to Map tab
+                });
+              },
             ),
             _buildActionItem(
               icon: Icons.schedule,
               label: 'Schedules',
               color: Colors.orange,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SchedulesScreen()),
+                );
+              },
             ),
             _buildActionItem(
               icon: Icons.credit_card,
-              label: 'Buy Ticket',
+              label: 'Ticket Menu',
               color: Colors.green,
-            ),
-            _buildActionItem(
-              icon: Icons.favorite,
-              label: 'Favorites',
-              color: Colors.red,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TicketMenuScreen()),
+                );
+              },
             ),
           ],
         ),
@@ -329,31 +344,35 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required String label,
     required Color color,
+    required VoidCallback onTap,
   }) {
-    return Column(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 30,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 30,
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1104,9 +1123,12 @@ class _CityMapScreenState extends State<CityMapScreen> {
   bool _isLoading = true;
   bool _isShowingDirections = false;
 
-  // Default camera position (New York City)
+  // Update the API key
+  final String _mapsApiKey = 'AIzaSyAYmYgkEZKIWrMY-S0hlPrDJ4zUfxEuXFI';
+
+  // Default camera position (Montreal instead of New York)
   final CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(40.7128, -74.0060),
+    target: LatLng(45.5017, -73.5673), // Montreal coordinates
     zoom: 12.0,
   );
 
@@ -1242,9 +1264,8 @@ class _CityMapScreenState extends State<CityMapScreen> {
     });
 
     try {
-      final String apiKey = 'AIzaSyCgyCgevMCS_RSF49NIz0dVN60O4L_1BOA'; // Using the API key from your AndroidManifest
       final String url =
-          'https://maps.googleapis.com/maps/api/directions/json?origin=${_source!.latitude},${_source!.longitude}&destination=${_destination!.latitude},${_destination!.longitude}&key=$apiKey';
+          'https://maps.googleapis.com/maps/api/directions/json?origin=${_source!.latitude},${_source!.longitude}&destination=${_destination!.latitude},${_destination!.longitude}&key=$_mapsApiKey';
 
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -1492,217 +1513,444 @@ class _CityMapScreenState extends State<CityMapScreen> {
             const Center(
               child: CircularProgressIndicator(),
             ),
+        ],
+      ),
+    );
+  }
+}
 
-          // Bottom sheet with station list
-          DraggableScrollableSheet(
-            initialChildSize: 0.3,
-            minChildSize: 0.1,
-            maxChildSize: 0.6,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 5,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Nearby Stations',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.filter_list,
-                                  size: 16,
-                                  color: Colors.blue.shade700,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Filter',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: 10,
-                        itemBuilder: (context, index) {
-                          return _buildStationListItem(index);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+class SchedulesScreen extends StatefulWidget {
+  const SchedulesScreen({super.key});
+
+  @override
+  State<SchedulesScreen> createState() => _SchedulesScreenState();
+}
+
+class _SchedulesScreenState extends State<SchedulesScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(title: 'Transit Schedules'),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.blue,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              tabs: const [
+                Tab(text: 'Metro'),
+                Tab(text: 'REM'),
+                Tab(text: 'EXO'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildMetroSchedule(),
+                _buildREMSchedule(),
+                _buildEXOSchedule(),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStationListItem(int index) {
-    final stationNames = [
-      'Central Station',
-      'Westside Terminal',
-      'Downtown Metro',
-      'North Avenue Station',
-      'Riverside Stop',
-      'University Station',
-      'Market Street',
-      'City Hall',
-      'Park Place',
-      'Airport Terminal',
-    ];
+  Widget _buildMetroSchedule() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLineHeader('Orange Line', Colors.orange),
+          _buildScheduleCard('Montmorency → Côte-Vertu', [
+            {'time': '5:30 AM - 12:30 AM', 'frequency': 'Every 3-5 minutes (peak)'},
+            {'time': '', 'frequency': 'Every 8-10 minutes (off-peak)'},
+          ]),
+          const SizedBox(height: 16),
 
-    final stationTypes = [
-      'Metro Station',
-      'Bus Terminal',
-      'Metro Station',
-      'Train Station',
-      'Bus Stop',
-      'Metro Station',
-      'Bus Stop',
-      'Metro Station',
-      'Train Station',
-      'Airport Link',
-    ];
+          _buildLineHeader('Green Line', Colors.green),
+          _buildScheduleCard('Angrignon → Honoré-Beaugrand', [
+            {'time': '5:30 AM - 12:30 AM', 'frequency': 'Every 3-5 minutes (peak)'},
+            {'time': '', 'frequency': 'Every 8-10 minutes (off-peak)'},
+          ]),
+          const SizedBox(height: 16),
 
-    final distances = [
-      '0.5 km',
-      '0.8 km',
-      '1.2 km',
-      '1.5 km',
-      '1.7 km',
-      '2.0 km',
-      '2.3 km',
-      '2.5 km',
-      '3.0 km',
-      '5.2 km',
-    ];
+          _buildLineHeader('Blue Line', Colors.blue),
+          _buildScheduleCard('Snowdon → Saint-Michel', [
+            {'time': '5:30 AM - 12:30 AM', 'frequency': 'Every 3-5 minutes (peak)'},
+            {'time': '', 'frequency': 'Every 8-10 minutes (off-peak)'},
+          ]),
+          const SizedBox(height: 16),
 
-    // Generate dummy coordinates for each station
-    final stationLocation = LatLng(
-      40.7128 + (index * 0.01), // Dummy coordinates for demo
-      -74.0060 + (index * 0.01),
+          _buildLineHeader('Yellow Line', Colors.amber.shade700),
+          _buildScheduleCard('Berri-UQAM → Longueuil', [
+            {'time': '5:30 AM - 12:30 AM', 'frequency': 'Every 3-5 minutes (peak)'},
+            {'time': '', 'frequency': 'Every 8-10 minutes (off-peak)'},
+          ]),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
+  }
 
+  Widget _buildREMSchedule() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLineHeader('REM Line 1', Colors.lightBlue),
+          _buildScheduleCard('Brossard → Gare Centrale', [
+            {'time': '5:00 AM - 1:00 AM', 'frequency': 'Every 2-4 minutes (peak)'},
+            {'time': '', 'frequency': 'Every 7-15 minutes (off-peak)'},
+          ]),
+          const SizedBox(height: 16),
+
+          _buildLineHeader('REM Line 2 (Coming Soon)', Colors.purple),
+          _buildScheduleCard('Anse-à-l\'Orme → Fairview-Pointe-Claire', [
+            {'time': 'Opening 2024', 'frequency': 'Schedule to be announced'},
+          ]),
+          const SizedBox(height: 16),
+
+          _buildLineHeader('REM Line 3 (Coming Soon)', Colors.teal),
+          _buildScheduleCard('Airport → Gare Centrale', [
+            {'time': 'Opening 2024', 'frequency': 'Schedule to be announced'},
+          ]),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEXOSchedule() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLineHeader('Vaudreuil-Hudson Line', Colors.indigo),
+          _buildScheduleCard('Vaudreuil → Lucien-L\'Allier', [
+            {'time': 'Weekdays', 'frequency': '6 departures (morning)'},
+            {'time': '', 'frequency': '6 departures (evening)'},
+          ]),
+          const SizedBox(height: 16),
+
+          _buildLineHeader('Saint-Jérôme Line', Colors.deepOrange),
+          _buildScheduleCard('Saint-Jérôme → Lucien-L\'Allier', [
+            {'time': 'Weekdays', 'frequency': '5 departures (morning)'},
+            {'time': '', 'frequency': '5 departures (evening)'},
+          ]),
+          const SizedBox(height: 16),
+
+          _buildLineHeader('Candiac Line', Colors.brown),
+          _buildScheduleCard('Candiac → Lucien-L\'Allier', [
+            {'time': 'Weekdays', 'frequency': '4 departures (morning)'},
+            {'time': '', 'frequency': '4 departures (evening)'},
+          ]),
+          const SizedBox(height: 16),
+
+          _buildLineHeader('Mascouche Line', Colors.pink),
+          _buildScheduleCard('Mascouche → Gare Centrale', [
+            {'time': 'Weekdays', 'frequency': '4 departures (morning)'},
+            {'time': '', 'frequency': '4 departures (evening)'},
+          ]),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLineHeader(String title, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScheduleCard(String route, List<Map<String, String>> schedules) {
+    return Card(
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              route,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const Divider(),
+            ...schedules.map((schedule) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (schedule['time']!.isNotEmpty) ...[
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        schedule['time']!,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(width: 120),
+                  ],
+                  Expanded(
+                    child: Text(schedule['frequency']!),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class TicketMenuScreen extends StatefulWidget {
+  const TicketMenuScreen({super.key});
+
+  @override
+  State<TicketMenuScreen> createState() => _TicketMenuScreenState();
+}
+
+class _TicketMenuScreenState extends State<TicketMenuScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(title: 'Ticket Menu'),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Single Fares'),
+            _buildTicketCard(
+              title: 'STM Single Fare',
+              price: '\$3.75',
+              description: 'Valid for one trip on the Montreal metro or bus network.',
+              icon: Icons.directions_subway,
+            ),
+            _buildTicketCard(
+              title: 'REM Single Fare',
+              price: '\$4.50',
+              description: 'Valid for one trip on the REM light rail network.',
+              icon: Icons.train,
+            ),
+            _buildTicketCard(
+              title: 'EXO Single Fare',
+              price: '\$5.25 - \$9.75',
+              description: 'Price varies by zones. Valid for one trip on the EXO commuter train network.',
+              icon: Icons.tram,
+            ),
+
+            _buildSectionHeader('Day Passes'),
+            _buildTicketCard(
+              title: '24-Hour Pass',
+              price: '\$11.00',
+              description: 'Unlimited travel on STM metro and bus networks for 24 hours.',
+              icon: Icons.access_time,
+            ),
+            _buildTicketCard(
+              title: 'Weekend Pass',
+              price: '\$14.75',
+              description: 'Unlimited travel from Friday 4 PM to Monday 5 AM on STM, REM, and EXO networks.',
+              icon: Icons.weekend,
+            ),
+
+            _buildSectionHeader('Monthly Passes'),
+            _buildTicketCard(
+              title: 'STM Monthly Pass',
+              price: '\$94.00',
+              description: 'Unlimited travel on STM metro and bus networks for one calendar month.',
+              icon: Icons.calendar_month,
+            ),
+            _buildTicketCard(
+              title: 'TRAM Monthly Pass',
+              price: '\$150.00 - \$255.00',
+              description: 'Price varies by zones. Unlimited travel on STM, REM, and EXO networks for one calendar month.',
+              icon: Icons.calendar_month,
+            ),
+
+            _buildSectionHeader('Special Fares'),
+            _buildTicketCard(
+              title: 'Reduced Fare (Students)',
+              price: '40% off regular price',
+              description: 'Available for full-time students with valid ID.',
+              icon: Icons.school,
+            ),
+            _buildTicketCard(
+              title: 'Reduced Fare (Seniors)',
+              price: '40% off regular price',
+              description: 'Available for seniors aged 65 and over.',
+              icon: Icons.elderly,
+            ),
+            _buildTicketCard(
+              title: 'Children (Under 12)',
+              price: 'Free',
+              description: 'Children under 12 travel for free when accompanied by an adult.',
+              icon: Icons.child_care,
+            ),
+
+            const SizedBox(height: 20),
+            _buildPurchaseButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTicketCard({
+    required String title,
+    required String price,
+    required String description,
+    required IconData icon,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.blue.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.train,
-            color: Colors.blue.shade700,
-          ),
-        ),
-        title: Text(
-          stationNames[index],
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          '${stationTypes[index]} • ${distances[index]} away',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconButton(
-              icon: const Icon(Icons.location_on, color: Colors.green),
-              onPressed: () {
-                setState(() {
-                  _source = stationLocation;
-                });
-
-                if (_destination != null) {
-                  _getDirections();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Now select a destination')),
-                  );
-                }
-              },
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.blue,
+                size: 28,
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.flag, color: Colors.red),
-              onPressed: () {
-                setState(() {
-                  _destination = stationLocation;
-                });
-
-                if (_source != null) {
-                  _getDirections();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Now select a source')),
-                  );
-                }
-              },
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    price,
+                    style: TextStyle(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        onTap: () {
-          // Center map on this station
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(stationLocation, 15),
+      ),
+    );
+  }
+
+  Widget _buildPurchaseButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ticket purchase functionality coming soon!')),
           );
         },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Purchase Tickets',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
