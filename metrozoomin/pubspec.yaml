@@ -40,6 +40,7 @@ dependencies:
   google_maps_flutter: any
   http: any
   flutter_native_splash: any
+  geolocator: any
 
 
   # Firebase
