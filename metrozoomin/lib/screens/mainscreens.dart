@@ -650,16 +650,37 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
 
   Future<void> _fetchPosts() async {
     try {
-      List<Map<String, dynamic>> posts = await getPosts();
+      setState(() {
+        _isLoading = true;
+      });
+
+      print("Fetching posts from Firestore"); // Debug print
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .orderBy('time', descending: true)
+          .get();
+
+      print("Fetched ${querySnapshot.docs.length} posts"); // Debug print
+
+      final posts = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        print("Post data: $data"); // Debug print
+        return data;
+      }).toList();
+
       setState(() {
         _posts = posts;
         _isLoading = false;
       });
     } catch (e) {
+      print('Error fetching posts: $e');
       setState(() {
         _isLoading = false;
       });
-      print('Error fetching posts: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching posts: $e')),
+      );
     }
   }
 
@@ -1073,37 +1094,75 @@ class _PersonalPostsScreenState extends State<PersonalPostsScreen> {
   }
 
   Future<void> _postComment() async {
-    var userData = await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).get();
-    var data = userData.data() as Map<String, dynamic>;
-    final uuid = Uuid();
-    final customId = uuid.v4();
-
-    Post post = Post(
-      id: customId,
-      username: data['username'],
-      station: stationController.text,
-      content: contentController.text,
-      imageUrl: "",
-      likes: 0,
-      time: Timestamp.fromDate(DateTime.now()),
-      likedBy: [],
-    );
-
     try {
-      await FirebaseFirestore.instance.collection('posts').doc(customId).set(post.toMap());
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be logged in to post')),
+        );
+        return;
+      }
+
+      print("Current user ID: ${user.uid}"); // Debug print
+
+      // First, get the user data
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      print("User document exists: ${userDoc.exists}"); // Debug print
+
+      String username = 'User';
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        username = userData?['username'] ?? 'User';
+        print("Username from Firestore: $username"); // Debug print
+      } else {
+        print("User document not found, using default username");
+      }
+
+      // Generate a unique ID for the post
+      final uuid = Uuid();
+      final postId = uuid.v4();
+      print("Generated post ID: $postId"); // Debug print
+
+      // Create post data
+      final postData = {
+        'id': postId,
+        'username': username,
+        'userId': user.uid,
+        'station': stationController.text,
+        'content': contentController.text,
+        'imageUrl': "",
+        'likes': 0,
+        'time': Timestamp.fromDate(DateTime.now()),
+        'likedBy': [],
+      };
+
+      print("Post data: $postData"); // Debug print
+
+      // Add the post to Firestore
+      await FirebaseFirestore.instance.collection('posts').doc(postId).set(postData);
       print('Post added successfully!');
 
       // Show notification when a new post is created
       await NotificationService().showNewPostNotification(
-        username: data['username'],
+        username: username,
         station: stationController.text,
       );
 
+      // Clear the input fields
       stationController.clear();
       contentController.clear();
+
+      // Refresh the posts list
       await _fetchPosts();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post created successfully!')),
+      );
     } catch (e) {
       print('Failed to add post: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add post: $e')),
+      );
     }
   }
 }

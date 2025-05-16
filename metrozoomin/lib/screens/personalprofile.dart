@@ -50,13 +50,17 @@ class _PersonalProfileState extends State<PersonalProfile> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final userData = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+        print("Current user ID: ${user.uid}"); // Debug print
+
+        final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+        print("Attempting to fetch user document: ${userDoc.path}"); // Debug print
+
+        final userData = await userDoc.get();
+        print("Document exists: ${userData.exists}"); // Debug print
 
         if (userData.exists) {
           final data = userData.data() as Map<String, dynamic>;
+          print("User data: $data"); // Debug print
 
           setState(() {
             _usernameController.text = data['username'] ?? '';
@@ -64,9 +68,28 @@ class _PersonalProfileState extends State<PersonalProfile> {
             _phoneController.text = data['phone'] ?? '';
             _selectedGender = data['gender'] ?? 'Prefer not to say';
           });
+        } else {
+          print("Creating new user document for ${user.uid}");
+          // If document doesn't exist, create it
+          await userDoc.set({
+            'username': user.displayName ?? user.email?.split('@')[0] ?? 'User',
+            'email': user.email ?? '',
+            'phone': '',
+            'gender': 'Prefer not to say',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+          // Set default values
+          setState(() {
+            _usernameController.text = user.displayName ?? user.email?.split('@')[0] ?? 'User';
+            _emailController.text = user.email ?? '';
+          });
         }
+      } else {
+        print("No user is currently signed in");
       }
     } catch (e) {
+      print('Error loading user data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading user data: $e')),
       );
@@ -85,12 +108,23 @@ class _PersonalProfileState extends State<PersonalProfile> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        print("Updating user document for ${user.uid}"); // Debug print
+
+        final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+        // Prepare update data
+        final updateData = {
           'username': _usernameController.text,
           'phone': _phoneController.text,
           'gender': _selectedGender,
-        });
+          'lastUpdated': FieldValue.serverTimestamp(),
+        };
 
+        print("Update data: $updateData"); // Debug print
+
+        await userDoc.set(updateData, SetOptions(merge: true));
+
+        print("Profile updated successfully");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
@@ -98,8 +132,11 @@ class _PersonalProfileState extends State<PersonalProfile> {
         setState(() {
           _isEditing = false;
         });
+      } else {
+        print("No user is currently signed in");
       }
     } catch (e) {
+      print('Error updating profile: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating profile: $e')),
       );

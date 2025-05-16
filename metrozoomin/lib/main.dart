@@ -5,6 +5,7 @@ import 'package:metrozoomin/screens/mainscreens.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrozoomin/services/notification_service.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   // This is required for the splash screen
@@ -17,10 +18,18 @@ void main() async {
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: "AIzaSyAQY1AeEplQCsgDYl_On9YCmCb4utjD0Lw",
-      appId: "225122880864",
+      appId: "225122880864", // Make sure this is correct
       messagingSenderId: "225122880864",
       projectId: "metrozoomin-bd5b3",
+      // Add storageBucket if you're using Firebase Storage
+      storageBucket: "metrozoomin-bd5b3.firebasestorage.app",
     ),
+  );
+
+  // Initialize Firestore
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
   // Initialize notification service
